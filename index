@@ -1,331 +1,693 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Waves, 
-  ArrowDown, 
-  ArrowRight, 
-  AlertTriangle, 
-  LifeBuoy, 
-  Wind, 
-  Eye, 
-  Activity,
-  Anchor,
-  Info
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>股市熱力圖 · StockMap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
-const DowncurrentApp = () => {
-  const [activeTab, setActiveTab] = useState('intro');
-  
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
-      {/* Header */}
-      <header className="bg-blue-900/50 backdrop-blur-md border-b border-blue-700/30 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-500 p-2 rounded-lg">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-xl font-bold tracking-wider">潛水安全指南：下降流</h1>
-          </div>
-        </div>
-      </header>
+  :root {
+    --bg: #0a0d12;
+    --surface: #111520;
+    --border: #1e2535;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --gain5: #00c853;
+    --gain3: #43a047;
+    --gain1: #2e7d32;
+    --flat: #263238;
+    --loss1: #b71c1c;
+    --loss3: #c62828;
+    --loss5: #e53935;
+    --accent: #3b82f6;
+  }
 
-      {/* Navigation */}
-      <div className="bg-slate-800/50 border-b border-slate-700">
-        <div className="max-w-4xl mx-auto px-4">
-          <nav className="flex space-x-1 overflow-x-auto no-scrollbar py-2">
-            <NavButton id="intro" label="什麼是下降流" icon={<Info size={18} />} active={activeTab} onClick={setActiveTab} />
-            <NavButton id="signs" label="如何識別" icon={<Eye size={18} />} active={activeTab} onClick={setActiveTab} />
-            <NavButton id="action" label="緊急應對" icon={<LifeBuoy size={18} />} active={activeTab} onClick={setActiveTab} />
-            <NavButton id="prevention" label="預防觀念" icon={<Anchor size={18} />} active={activeTab} onClick={setActiveTab} />
-          </nav>
-        </div>
-      </div>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
-        {activeTab === 'intro' && <IntroSection />}
-        {activeTab === 'signs' && <SignsSection />}
-        {activeTab === 'action' && <ActionSection />}
-        {activeTab === 'prevention' && <PreventionSection />}
-      </main>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 
-      {/* Footer */}
-      <footer className="bg-slate-950 py-8 text-center text-slate-500 text-sm border-t border-slate-800 mt-auto">
-        <p>© 2025 潛水安全教育資料 | 請始終遵守保守潛水原則</p>
-        <p className="mt-2 text-xs">免責聲明：本資訊僅供參考，實際潛水請依照當地導潛指示及自身訓練水平進行。</p>
-      </footer>
-    </div>
-  );
-};
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 
-/* --- Components --- */
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-const NavButton = ({ id, label, icon, active, onClick }) => (
-  <button
-    onClick={() => onClick(id)}
-    className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 whitespace-nowrap ${
-      active === id 
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-    }`}
-  >
-    {icon}
-    <span>{label}</span>
-  </button>
-);
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--gain5);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
 
-const IntroSection = () => {
-  return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="bg-gradient-to-br from-blue-900 to-slate-900 p-6 rounded-2xl border border-blue-700/30 shadow-xl">
-        <h2 className="text-2xl font-bold mb-4 text-blue-300 flex items-center">
-          <Activity className="mr-2" /> 形成原理
-        </h2>
-        <p className="text-lg leading-relaxed text-slate-300 mb-6">
-          下降流（Downcurrent）通常發生在海底峭壁、岬角或兩股海流交匯處。當水平流動的海流撞擊到峭壁後，水流方向被迫改變，一部分向上，一部分則<span className="text-red-400 font-bold">劇烈向下</span>。這股向下的力量可能極強，將潛水員迅速帶往更深的深度。
-        </p>
-        
-        {/* Visual Simulation */}
-        <div className="relative h-64 bg-blue-950 rounded-xl overflow-hidden border border-blue-800">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-          
-          {/* Wall */}
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-slate-800 flex items-center justify-center border-l border-slate-700">
-            <span className="text-slate-500 font-bold rotate-90 text-xl tracking-widest">海底峭壁 (WALL)</span>
-          </div>
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
 
-          {/* Arrows Animation Container */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Horizontal Flow */}
-            <div className="absolute top-1/2 left-0 w-1/2 h-1 bg-blue-400/30"></div>
-            <div className="absolute top-1/3 left-10 flex space-x-1 animate-pulse">
-               <ArrowRight className="text-blue-400 w-8 h-8" />
-               <ArrowRight className="text-blue-400 w-8 h-8 opacity-75" />
-               <ArrowRight className="text-blue-400 w-8 h-8 opacity-50" />
-            </div>
-            <div className="absolute top-1/3 left-1/2 text-blue-200 font-bold text-sm bg-blue-900/80 px-2 py-1 rounded">強勁洋流</div>
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-            {/* Downward Flow */}
-            <div className="absolute top-1/2 right-[34%] flex flex-col space-y-1 animate-bounce duration-[2000ms]">
-               <ArrowDown className="text-red-500 w-10 h-10 drop-shadow-lg" />
-               <ArrowDown className="text-red-500 w-10 h-10 opacity-75" />
-            </div>
-            <div className="absolute top-2/3 right-[36%] text-red-300 font-bold text-sm bg-red-900/80 px-2 py-1 rounded">下降流</div>
-            
-            {/* Diver Icon */}
-            <div className="absolute top-1/2 right-[45%] text-yellow-400 transition-all duration-1000 hover:translate-y-10 cursor-pointer group">
-               <LifeBuoy className="w-8 h-8 animate-spin-slow" />
-               <div className="opacity-0 group-hover:opacity-100 absolute -bottom-8 left-0 w-32 text-xs bg-black p-1 rounded">潛水員被帶離深度</div>
-            </div>
-          </div>
-        </div>
-        <p className="text-sm text-center text-slate-400 mt-3">
-          示意圖：洋流撞擊峭壁後，轉向下方形成強勁拉力。
-        </p>
-      </div>
+  #refresh-info {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <InfoCard 
-          title="發生地點" 
-          content="常見於斷層邊緣（Drop-off）、海岬尖端（Corner）、兩島之間的通道。這些地方地形變化大，水流複雜。"
-          icon={<Anchor className="text-emerald-400" />}
-        />
-        <InfoCard 
-          title="危險性" 
-          content="除了快速掉深導致耳壓平衡不及或氮醉，最危險的是耗盡氣源與心理恐慌，甚至被帶超過休閒潛水極限深度。"
-          icon={<AlertTriangle className="text-red-400" />}
-        />
-      </div>
-    </div>
-  );
-};
+  #last-updated {
+    font-size: 12px;
+    color: var(--muted);
+  }
 
-const SignsSection = () => {
-  const signs = [
-    {
-      title: "氣泡向下跑",
-      desc: "這是最明顯的訊號。正常氣泡應垂直上升，若你吐出的氣泡在他處下沉，或在你周圍亂竄甚至往下跑，代表你正處於下降流中。",
-      icon: <Wind className="text-blue-300" />,
-      color: "bg-blue-900/40"
-    },
-    {
-      title: "魚群游姿異常",
-      desc: "觀察周圍的小魚。如果牠們拼命拍動尾鰭卻沒有前進，或者頭朝下呈現垂直游動的姿勢，代表水流極強。",
-      icon: <Activity className="text-yellow-300" />,
-      color: "bg-yellow-900/20"
-    },
-    {
-      title: "海扇與軟珊瑚狀態",
-      desc: "生長在峭壁上的海扇如果被強烈地壓向下方，或者軟珊瑚呈現被壓扁的狀態，都是強烈水流的視覺證據。",
-      icon: <Waves className="text-emerald-300" />,
-      color: "bg-emerald-900/20"
-    },
-    {
-      title: "電腦錶深度驟變",
-      desc: "你沒有洩氣，BCD也沒有破，但電腦錶顯示深度在幾秒內快速增加（例如從15米突然變成20米）。",
-      icon: <AlertTriangle className="text-red-300" />,
-      color: "bg-red-900/20"
-    }
-  ];
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, background 0.2s;
+  }
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <h2 className="text-2xl font-bold text-white mb-4">如何識別？觀察這 4 個跡象</h2>
-      <div className="grid gap-4">
-        {signs.map((sign, idx) => (
-          <div key={idx} className={`${sign.color} p-5 rounded-xl border border-white/5 flex items-start space-x-4 hover:border-white/20 transition-colors`}>
-            <div className="bg-black/30 p-3 rounded-lg shrink-0">
-              {sign.icon}
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-slate-100">{sign.title}</h3>
-              <p className="text-slate-300 mt-1 text-sm leading-relaxed">{sign.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+  .refresh-btn:hover { border-color: var(--accent); background: rgba(59,130,246,0.08); }
 
-const ActionSection = () => {
-  const [step, setStep] = useState(0);
-  
-  const steps = [
-    {
-      title: "1. 保持冷靜 (Stay Calm)",
-      content: "這是最重要的一步。恐慌會導致過度換氣和做出錯誤判斷。確認你的二級頭咬緊，面鏡戴好。",
-      action: "深呼吸，停止無效的踢動，評估狀況。",
-      color: "border-blue-500"
-    },
-    {
-      title: "2. 遠離峭壁 (Swim Away)",
-      content: "不要試圖「往上」游對抗下降流（通常贏不了）。下降流通常緊貼著峭壁。",
-      action: "身體保持水平，全力向「外」（遠離牆壁的方向）踢動，游出下降流的影響範圍。",
-      color: "border-yellow-500"
-    },
-    {
-      title: "3. 適度充氣 (Inflate BCD)",
-      content: "如果在快速下墜，可以點放充氣鈕建立正浮力。但要非常小心！",
-      action: "一旦脫離下降流，立刻準備洩氣，避免失控上升（火箭式上升）。",
-      color: "border-orange-500"
-    },
-    {
-      title: "4. 尋找掩護或攀爬 (Shelter/Climb)",
-      content: "如果無法游開且被壓向峭壁，尋找岩石凹陷處躲避。",
-      action: "必要時抓住死珊瑚或岩石（戴手套），像攀岩一樣往上或橫向移動。",
-      color: "border-emerald-500"
-    },
-    {
-      title: "5. 最後手段：拋棄配重",
-      content: "如果你已經掉到極限深度且無法停止下墜，這是最後保命手段。",
-      action: "拋棄配重帶。注意：這會導致隨後的急速上升，必須準備好身體呈大字型減速並不斷洩氣。",
-      color: "border-red-600"
-    }
-  ];
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
 
-  return (
-    <div className="animate-fade-in">
-      <h2 className="text-2xl font-bold text-white mb-6">緊急應對程序 (S.O.P.)</h2>
-      
-      {/* Interactive Steps */}
-      <div className="bg-slate-800 rounded-2xl p-1 shadow-inner mb-6">
-        <div className="flex space-x-1 overflow-x-auto no-scrollbar p-1">
-          {steps.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setStep(idx)}
-              className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                step === idx ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
-              }`}
-            >
-              步驟 {idx + 1}
-            </button>
-          ))}
-        </div>
-      </div>
+  .tab {
+    padding: 8px 20px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    border: 1px solid transparent;
+    border-bottom: none;
+    transition: color 0.2s, background 0.2s;
+    background: transparent;
+  }
 
-      <div className={`bg-slate-900 border-l-4 ${steps[step].color} p-8 rounded-r-xl shadow-2xl min-h-[250px] flex flex-col justify-center transition-all duration-300`}>
-        <h3 className="text-2xl font-bold mb-4 flex items-center text-white">
-          {steps[step].title}
-        </h3>
-        <p className="text-lg text-slate-300 mb-6">
-          {steps[step].content}
-        </p>
-        <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-          <span className="text-blue-400 font-bold uppercase text-xs tracking-wider block mb-2">Action Item</span>
-          <p className="text-white font-medium">{steps[step].action}</p>
-        </div>
-      </div>
+  .tab:hover { color: var(--text); }
 
-      <div className="flex justify-between mt-6">
-        <button 
-          disabled={step === 0}
-          onClick={() => setStep(s => s - 1)}
-          className="px-6 py-2 rounded-full bg-slate-700 text-white disabled:opacity-30 hover:bg-slate-600 transition"
-        >
-          上一步
-        </button>
-        <button 
-          disabled={step === steps.length - 1}
-          onClick={() => setStep(s => s + 1)}
-          className="px-6 py-2 rounded-full bg-blue-600 text-white disabled:opacity-30 hover:bg-blue-500 transition"
-        >
-          下一步
-        </button>
-      </div>
-    </div>
-  );
-};
+  .tab.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    position: relative;
+    bottom: -1px;
+  }
 
-const PreventionSection = () => {
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-gradient-to-r from-emerald-900/40 to-slate-900 p-6 rounded-2xl border border-emerald-800/30">
-        <h2 className="text-2xl font-bold text-emerald-400 mb-4">預防勝於治療</h2>
-        <ul className="space-y-4">
-          <PreventionItem 
-            title="仔細聆聽導潛簡報 (Briefing)" 
-            desc="當地導潛最清楚哪裡會有下降流。如果提到「洗衣機流」或「強流」，請提高警覺。" 
-          />
-          <PreventionItem 
-            title="保持適當距離" 
-            desc="在峭壁潛水時，不要貼得太近，保持幾米的距離可以讓你有更多反應時間，也不容易直接被捲入。" 
-          />
-          <PreventionItem 
-            title="觀察前導潛水員" 
-            desc="注意導潛的氣泡。如果導潛的氣泡突然亂跑，不要跟隨進入該區域，立刻繞道。" 
-          />
-          <PreventionItem 
-            title="殘壓管理" 
-            desc="在強流區耗氣量會大增。保留更多的氣瓶餘量以應對突發狀況。" 
-          />
-        </ul>
-      </div>
-    </div>
-  );
-};
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
 
-const PreventionItem = ({ title, desc }) => (
-  <li className="flex items-start space-x-3">
-    <div className="mt-1 bg-emerald-500/20 p-1 rounded-full">
-      <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-    </div>
-    <div>
-      <strong className="text-emerald-100 block text-lg">{title}</strong>
-      <span className="text-slate-400 text-sm">{desc}</span>
-    </div>
-  </li>
-);
+  .legend-bar {
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 12px;
+  }
 
-const InfoCard = ({ title, content, icon }) => (
-  <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
-    <div className="flex items-center space-x-3 mb-3">
-      <div className="p-2 bg-slate-900 rounded-lg">{icon}</div>
-      <h3 className="font-bold text-lg text-slate-200">{title}</h3>
-    </div>
-    <p className="text-slate-400 text-sm leading-relaxed">{content}</p>
+  .legend-bar span {
+    width: 36px;
+    display: inline-block;
+  }
+
+  .legend-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  /* ── Main ── */
+  main { flex: 1; padding: 20px 24px; }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Heatmap Grid ── */
+  .heatmap-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 28px;
+    min-height: 80px;
+  }
+
+  .stock-tile {
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    min-width: 70px;
+    min-height: 70px;
+  }
+
+  .stock-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.03);
+    pointer-events: none;
+  }
+
+  .stock-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    filter: brightness(1.15);
+    z-index: 10;
+  }
+
+  .tile-symbol {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(255,255,255,0.95);
+    letter-spacing: 0.3px;
+  }
+
+  .tile-name {
+    font-size: 9px;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+
+  .tile-change {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tile-price {
+    font-size: 9px;
+    color: rgba(255,255,255,0.6);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 1px;
+  }
+
+  /* ── Tooltip ── */
+  #tooltip {
+    position: fixed;
+    background: #1a2035;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.15s;
+    min-width: 200px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  }
+
+  #tooltip.visible { opacity: 1; }
+
+  .tt-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .tt-name { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
+
+  .tt-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .tt-label { color: var(--muted); }
+
+  .tt-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+
+  .tt-val.pos { color: var(--gain5); }
+  .tt-val.neg { color: var(--loss5); }
+
+  /* ── Loading / Error ── */
+  .loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 13px;
+    width: 100%;
+  }
+
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Stats Bar ── */
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .stat-item { display: flex; gap: 6px; align-items: center; }
+  .stat-label { color: var(--muted); }
+  .stat-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .stat-val.pos { color: var(--gain5); }
+  .stat-val.neg { color: var(--loss5); }
+
+  /* ── ETF special badge ── */
+  .etf-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 7px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    padding: 1px 4px;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    股市熱力圖
   </div>
-);
+  <div class="header-right">
+    <span id="last-updated">載入中...</span>
+    <span id="refresh-info">60s 自動更新</span>
+    <button class="refresh-btn" onclick="fetchAll()">↻ 手動更新</button>
+  </div>
+</header>
 
-export default DowncurrentApp;
+<div class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-label">上漲</span>
+    <span class="stat-val pos" id="stat-up">-</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-label">下跌</span>
+    <span class="stat-val neg" id="stat-down">-</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-label">平盤</span>
+    <span class="stat-val" id="stat-flat" style="color:var(--muted)">-</span>
+  </div>
+  <div class="stat-item" style="margin-left:auto">
+    <span class="stat-label">資料來源</span>
+    <span class="stat-val" style="color:var(--accent)">Finnhub</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('all', this)">🌐 全部</button>
+  <button class="tab" onclick="switchTab('tw', this)">🇹🇼 台股</button>
+  <button class="tab" onclick="switchTab('us', this)">🇺🇸 美股</button>
+  <button class="tab" onclick="switchTab('etf', this)">📦 ETF</button>
+</div>
+
+<div class="legend">
+  <span>漲跌幅：</span>
+  <div class="legend-bar">
+    <span style="background:#00c853"></span>
+    <span style="background:#43a047"></span>
+    <span style="background:#2e7d32"></span>
+    <span style="background:#263238"></span>
+    <span style="background:#b71c1c"></span>
+    <span style="background:#c62828"></span>
+    <span style="background:#e53935"></span>
+  </div>
+  <span class="legend-label">+5%</span>
+  <span style="flex:1"></span>
+  <span class="legend-label">0%</span>
+  <span style="flex:1"></span>
+  <span class="legend-label">-5%</span>
+</div>
+
+<main id="main-content">
+  <div id="section-tw">
+    <div class="section-title">台股 · 個股</div>
+    <div class="heatmap-container" id="heatmap-tw"></div>
+  </div>
+  <div id="section-tw-etf">
+    <div class="section-title">台股 · ETF</div>
+    <div class="heatmap-container" id="heatmap-tw-etf"></div>
+  </div>
+  <div id="section-us">
+    <div class="section-title">美股 · 科技 / AI</div>
+    <div class="heatmap-container" id="heatmap-us"></div>
+  </div>
+</main>
+
+<div id="tooltip">
+  <div class="tt-symbol" id="tt-symbol"></div>
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-row"><span class="tt-label">現價</span><span class="tt-val" id="tt-price"></span></div>
+  <div class="tt-row"><span class="tt-label">漲跌</span><span class="tt-val" id="tt-change"></span></div>
+  <div class="tt-row"><span class="tt-label">漲跌幅</span><span class="tt-val" id="tt-pct"></span></div>
+  <div class="tt-row"><span class="tt-label">開盤</span><span class="tt-val" id="tt-open"></span></div>
+  <div class="tt-row"><span class="tt-label">最高</span><span class="tt-val" id="tt-high"></span></div>
+  <div class="tt-row"><span class="tt-label">最低</span><span class="tt-val" id="tt-low"></span></div>
+</div>
+
+<script>
+const API_KEY = 'd8p5eb1r01qp954vb26gd8p5eb1r01qp954vb270';
+
+const TW_STOCKS = [
+  { symbol: '2330.TW', name: '台積電', size: 9 },
+  { symbol: '2317.TW', name: '鴻海', size: 6 },
+  { symbol: '2454.TW', name: '聯發科', size: 6 },
+  { symbol: '3008.TW', name: '大立光', size: 4 },
+  { symbol: '2382.TW', name: '廣達', size: 5 },
+  { symbol: '2357.TW', name: '華碩', size: 4 },
+  { symbol: '2412.TW', name: '中華電', size: 4 },
+  { symbol: '2308.TW', name: '台達電', size: 5 },
+  { symbol: '2303.TW', name: '聯電', size: 4 },
+  { symbol: '2891.TW', name: '中信金', size: 4 },
+  { symbol: '2881.TW', name: '富邦金', size: 4 },
+  { symbol: '2882.TW', name: '國泰金', size: 4 },
+  { symbol: '3711.TW', name: '日月光投控', size: 4 },
+  { symbol: '2886.TW', name: '兆豐金', size: 3 },
+  { symbol: '2395.TW', name: '研華', size: 3 },
+  { symbol: '6505.TW', name: '台塑化', size: 3 },
+  { symbol: '1301.TW', name: '台塑', size: 3 },
+  { symbol: '2002.TW', name: '中鋼', size: 3 },
+  { symbol: '2376.TW', name: '技嘉', size: 3 },
+  { symbol: '2379.TW', name: '瑞昱', size: 3 },
+];
+
+const TW_ETFS = [
+  { symbol: '0050.TW', name: '元大台灣50', size: 5, etf: true },
+  { symbol: '0056.TW', name: '元大高股息', size: 4, etf: true },
+  { symbol: '00878.TW', name: '國泰永續高股息', size: 5, etf: true },
+  { symbol: '00919.TW', name: '群益台灣精選高息', size: 4, etf: true },
+  { symbol: '006208.TW', name: '富邦台50', size: 4, etf: true },
+  { symbol: '00929.TW', name: '復華台灣科技優息', size: 3, etf: true },
+  { symbol: '00940.TW', name: '元大台灣價值高息', size: 3, etf: true },
+];
+
+const US_STOCKS = [
+  { symbol: 'NVDA', name: 'NVIDIA', size: 9 },
+  { symbol: 'MSFT', name: 'Microsoft', size: 8 },
+  { symbol: 'AAPL', name: 'Apple', size: 8 },
+  { symbol: 'GOOGL', name: 'Alphabet', size: 7 },
+  { symbol: 'META', name: 'Meta', size: 7 },
+  { symbol: 'AMZN', name: 'Amazon', size: 7 },
+  { symbol: 'TSLA', name: 'Tesla', size: 6 },
+  { symbol: 'AMD', name: 'AMD', size: 5 },
+  { symbol: 'AVGO', name: 'Broadcom', size: 5 },
+  { symbol: 'INTC', name: 'Intel', size: 4 },
+  { symbol: 'QCOM', name: 'Qualcomm', size: 4 },
+  { symbol: 'ORCL', name: 'Oracle', size: 5 },
+  { symbol: 'CRM', name: 'Salesforce', size: 4 },
+  { symbol: 'PLTR', name: 'Palantir', size: 4 },
+  { symbol: 'ARM', name: 'ARM Holdings', size: 4 },
+  { symbol: 'SMCI', name: 'Super Micro', size: 3 },
+  { symbol: 'TSM', name: 'TSMC ADR', size: 6 },
+  { symbol: 'NFLX', name: 'Netflix', size: 5 },
+  { symbol: 'UBER', name: 'Uber', size: 4 },
+  { symbol: 'ASML', name: 'ASML', size: 4 },
+];
+
+let stockData = {};
+let currentTab = 'all';
+let refreshTimer = null;
+let countdown = 60;
+
+function getColor(pct) {
+  if (pct === null || pct === undefined) return '#1e2535';
+  if (pct >= 5)  return '#00c853';
+  if (pct >= 3)  return '#43a047';
+  if (pct >= 1)  return '#2e7d32';
+  if (pct >= -1) return '#263238';
+  if (pct >= -3) return '#b71c1c';
+  if (pct >= -5) return '#c62828';
+  return '#e53935';
+}
+
+function getTileSize(size) {
+  const base = 60;
+  return base + size * 12;
+}
+
+function fmt(n, dec = 2) {
+  if (n === null || n === undefined || isNaN(n)) return '-';
+  return n.toFixed(dec);
+}
+
+function fmtPrice(n, isTW) {
+  if (n === null || isNaN(n)) return '-';
+  return isTW ? `NT$${n.toFixed(2)}` : `$${n.toFixed(2)}`;
+}
+
+async function fetchQuote(symbol) {
+  try {
+    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`);
+    const d = await r.json();
+    if (d && d.c && d.c !== 0) return d;
+    return null;
+  } catch { return null; }
+}
+
+async function fetchAll() {
+  const allStocks = [...TW_STOCKS, ...TW_ETFS, ...US_STOCKS];
+
+  // Show loading
+  ['heatmap-tw','heatmap-tw-etf','heatmap-us'].forEach(id => {
+    document.getElementById(id).innerHTML = `<div class="loading-overlay"><div class="spinner"></div>抓取資料中...</div>`;
+  });
+
+  // Fetch in batches to respect rate limit
+  const BATCH = 10;
+  for (let i = 0; i < allStocks.length; i += BATCH) {
+    const batch = allStocks.slice(i, i + BATCH);
+    await Promise.all(batch.map(async (s) => {
+      const q = await fetchQuote(s.symbol);
+      if (q) stockData[s.symbol] = q;
+    }));
+    if (i + BATCH < allStocks.length) await new Promise(r => setTimeout(r, 1100));
+  }
+
+  renderAll();
+  updateStats();
+  updateTimestamp();
+  startCountdown();
+}
+
+function renderTile(stock, isTW) {
+  const q = stockData[stock.symbol];
+  const pct = q ? ((q.c - q.pc) / q.pc * 100) : null;
+  const change = q ? (q.c - q.pc) : null;
+  const size = getTileSize(stock.size);
+  const color = getColor(pct);
+  const pctStr = pct !== null ? `${pct >= 0 ? '+' : ''}${fmt(pct)}%` : '---';
+  const priceStr = q ? fmtPrice(q.c, isTW) : '-';
+  const shortSymbol = stock.symbol.replace('.TW','');
+
+  return `
+    <div class="stock-tile"
+      style="background:${color}; width:${size}px; height:${size}px; flex:0 0 ${size}px"
+      onmouseenter="showTooltip(event, '${stock.symbol}', '${stock.name}', ${isTW})"
+      onmouseleave="hideTooltip()"
+      onmousemove="moveTooltip(event)"
+    >
+      ${stock.etf ? '<div class="etf-badge">ETF</div>' : ''}
+      <div>
+        <div class="tile-symbol">${shortSymbol}</div>
+        <div class="tile-name">${stock.name}</div>
+      </div>
+      <div>
+        <div class="tile-change">${pctStr}</div>
+        <div class="tile-price">${priceStr}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  document.getElementById('heatmap-tw').innerHTML =
+    TW_STOCKS.map(s => renderTile(s, true)).join('');
+  document.getElementById('heatmap-tw-etf').innerHTML =
+    TW_ETFS.map(s => renderTile(s, true)).join('');
+  document.getElementById('heatmap-us').innerHTML =
+    US_STOCKS.map(s => renderTile(s, false)).join('');
+}
+
+function updateStats() {
+  const all = [...TW_STOCKS, ...TW_ETFS, ...US_STOCKS];
+  let up = 0, down = 0, flat = 0;
+  all.forEach(s => {
+    const q = stockData[s.symbol];
+    if (!q) return;
+    const pct = (q.c - q.pc) / q.pc * 100;
+    if (pct > 0.1) up++;
+    else if (pct < -0.1) down++;
+    else flat++;
+  });
+  document.getElementById('stat-up').textContent = up;
+  document.getElementById('stat-down').textContent = down;
+  document.getElementById('stat-flat').textContent = flat;
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `更新於 ${now.toLocaleTimeString('zh-TW')}`;
+}
+
+function startCountdown() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  countdown = 60;
+  refreshTimer = setInterval(() => {
+    countdown--;
+    document.getElementById('refresh-info').textContent = `${countdown}s 後更新`;
+    if (countdown <= 0) {
+      clearInterval(refreshTimer);
+      fetchAll();
+    }
+  }, 1000);
+}
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(e, symbol, name, isTW) {
+  const q = stockData[symbol];
+  document.getElementById('tt-symbol').textContent = symbol.replace('.TW','');
+  document.getElementById('tt-name').textContent = name;
+  if (q) {
+    const pct = (q.c - q.pc) / q.pc * 100;
+    const change = q.c - q.pc;
+    const isPos = pct >= 0;
+    document.getElementById('tt-price').textContent = fmtPrice(q.c, isTW);
+    document.getElementById('tt-price').className = 'tt-val';
+    const chEl = document.getElementById('tt-change');
+    chEl.textContent = `${change >= 0 ? '+' : ''}${fmt(change)}`;
+    chEl.className = `tt-val ${isPos ? 'pos' : 'neg'}`;
+    const pctEl = document.getElementById('tt-pct');
+    pctEl.textContent = `${pct >= 0 ? '+' : ''}${fmt(pct)}%`;
+    pctEl.className = `tt-val ${isPos ? 'pos' : 'neg'}`;
+    document.getElementById('tt-open').textContent = fmtPrice(q.o, isTW);
+    document.getElementById('tt-high').textContent = fmtPrice(q.h, isTW);
+    document.getElementById('tt-low').textContent = fmtPrice(q.l, isTW);
+  } else {
+    ['tt-price','tt-change','tt-pct','tt-open','tt-high','tt-low']
+      .forEach(id => { document.getElementById(id).textContent = '-'; });
+  }
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+function moveTooltip(e) {
+  const x = e.clientX + 16;
+  const y = e.clientY - 10;
+  const tw = tooltip.offsetWidth || 200;
+  const th = tooltip.offsetHeight || 180;
+  tooltip.style.left = (x + tw > window.innerWidth ? x - tw - 32 : x) + 'px';
+  tooltip.style.top = (y + th > window.innerHeight ? y - th : y) + 'px';
+}
+
+// Tab switching
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const showTw    = tab === 'all' || tab === 'tw' || tab === 'etf' || tab === 'tw';
+  const showTwEtf = tab === 'all' || tab === 'etf' || tab === 'tw';
+  const showUs    = tab === 'all' || tab === 'us';
+  const showOnlyEtf = tab === 'etf';
+
+  document.getElementById('section-tw').style.display =
+    (tab === 'all' || tab === 'tw') ? '' : 'none';
+  document.getElementById('section-tw-etf').style.display =
+    (tab === 'all' || tab === 'tw' || tab === 'etf') ? '' : 'none';
+  document.getElementById('section-us').style.display =
+    (tab === 'all' || tab === 'us') ? '' : 'none';
+}
+
+// Init
+fetchAll();
+</script>
+</body>
+</html>
