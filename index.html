@@ -144,6 +144,28 @@
     font-family:'Roboto Mono', monospace;
     font-size: 11px; color: var(--ink-soft); opacity:0.7;
   }
+  .field.wide{ grid-column: 1 / -1; }
+  .toggle-group{
+    display:flex; gap:8px; margin-top:4px;
+  }
+  .toggle-btn{
+    flex:1;
+    font-family:'Noto Sans TC', sans-serif;
+    font-size: 13px; font-weight:500;
+    padding: 9px 10px;
+    border: 1.5px solid var(--paper-line);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .toggle-btn.active{
+    border-color: var(--stamp);
+    color: var(--stamp);
+    background: rgba(161,61,61,0.08);
+    font-weight: 700;
+  }
 
   /* ---------- Ledger table ---------- */
   table.ledger{
@@ -306,6 +328,15 @@
           </div>
           <div class="subval">= 每月定期定額 × 所需月數（實際掏的錢）</div>
         </div>
+
+        <div class="field wide">
+          <label>股息處理方式（累積期間）</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn active" id="modeReinvest" data-mode="reinvest">股息全部再投入</button>
+            <button type="button" class="toggle-btn" id="modeWithdraw" data-mode="withdraw">股息先領出來花</button>
+          </div>
+          <div class="subval" id="modeNote" style="margin-top:6px;">再投入＝表格的年化報酬率就是實際成長率（含複利）</div>
+        </div>
       </div>
     </div>
 
@@ -332,7 +363,7 @@
       </table>
 
       <div class="principal-note">
-        計算採「本金保留、退休後靠殖利率永續提領」模式：先用目標月領金額 ÷ 5%（假設殖利率）反推所需本金，再用你輸入的「每月定期定額」反推需要投入幾年才能滾到目標本金。「月投本金累計」= 每月定期定額 × 所需月數，是自己實際掏出來的錢；「複利增值」= 目標本金 − 月投本金累計，是靠市場報酬額外賺到的部分。實際報酬率、殖利率會隨市場波動，本表僅為估算工具。
+        計算採「本金保留、退休後靠殖利率永續提領」模式：先用目標月領金額 ÷ 5%（假設殖利率）反推所需本金，再用你輸入的「每月定期定額」反推需要投入幾年才能滾到目標本金。累積期間若選擇「股息全部再投入」，表格的年化報酬率就是實際成長率；若選擇「股息先領出來花」，實際成長率會扣掉約5%殖利率（假設累積期間平均殖利率也是5%），所需年數會明顯拉長。「月投本金累計」= 每月定期定額 × 所需月數，是自己實際掏出來的錢；「複利增值」= 目標本金 − 月投本金累計，是靠市場報酬額外賺到的部分。實際報酬率、殖利率會隨市場波動，本表僅為估算工具。
       </div>
     </div>
 
@@ -469,6 +500,20 @@ function fmtYearsMonths(totalMonths){
 }
 
 const RETIRE_YIELD = 0.05; // 假設退休後殖利率，固定5%
+const ACCUM_YIELD = 0.05;  // 假設累積期間平均殖利率，用於「股息先領出」模式扣除
+let dividendMode = 'reinvest'; // 'reinvest' | 'withdraw'
+
+const modeNotes = {
+  reinvest: '再投入＝表格的年化報酬率就是實際成長率（含複利）',
+  withdraw: '先領出＝股息當生活費花掉，累積期只靠股價成長，實際成長率會扣掉約5%殖利率，所需時間會拉長很多',
+};
+
+function effectiveRate(nominalRate){
+  if (dividendMode === 'withdraw'){
+    return Math.max(nominalRate - ACCUM_YIELD, 0.005);
+  }
+  return nominalRate;
+}
 
 function recalc(){
   const target = parseFloat(document.getElementById('targetIncome').value) || 0;
@@ -477,10 +522,12 @@ function recalc(){
   document.getElementById('targetIncomeRange').value = target;
   document.getElementById('monthlyInvestRange').value = monthlyInvest;
 
+  document.getElementById('modeNote').textContent = modeNotes[dividendMode];
+
   const principal = (target * 12) / RETIRE_YIELD;
   document.getElementById('targetPrincipal').textContent = fmt(principal);
 
-  const headlineMonths = monthsNeeded(0.07, monthlyInvest, principal);
+  const headlineMonths = monthsNeeded(effectiveRate(0.07), monthlyInvest, principal);
   const headlineMonthsRounded = Math.max(0, Math.ceil(headlineMonths));
   document.getElementById('yearsNeeded').textContent = fmtYearsMonths(headlineMonths);
   document.getElementById('totalCost').textContent = fmt(monthlyInvest * headlineMonthsRounded);
@@ -489,13 +536,17 @@ function recalc(){
   const tbody = document.getElementById('ledgerBody');
   tbody.innerHTML = '';
   rates.forEach(r => {
-    const months = monthsNeeded(r, monthlyInvest, principal);
+    const effR = effectiveRate(r);
+    const months = monthsNeeded(effR, monthlyInvest, principal);
     const contributed = monthlyInvest * months;
     const growth = principal - contributed;
     const tr = document.createElement('tr');
     if (r === 0.07) tr.className = 'hi';
+    const rateLabel = dividendMode === 'withdraw'
+      ? `年化 ${(r*100).toFixed(0)}%（實際成長 ${(effR*100).toFixed(1)}%）`
+      : `年化 ${(r*100).toFixed(0)}%`;
     tr.innerHTML = `
-      <td>${r===0.07 ? '<span class="stamp-mark">推</span>' : ''}年化 ${(r*100).toFixed(0)}%</td>
+      <td>${r===0.07 ? '<span class="stamp-mark">推</span>' : ''}${rateLabel}</td>
       <td class="num">${fmtYearsMonths(months)}</td>
       <td class="num">$${fmt(contributed)}</td>
       <td class="num">$${fmt(growth)}</td>
@@ -559,6 +610,19 @@ function recalc(){
     document.getElementById(baseId).value = e.target.value;
     recalc();
   });
+});
+
+document.getElementById('modeReinvest').addEventListener('click', ()=>{
+  dividendMode = 'reinvest';
+  document.getElementById('modeReinvest').classList.add('active');
+  document.getElementById('modeWithdraw').classList.remove('active');
+  recalc();
+});
+document.getElementById('modeWithdraw').addEventListener('click', ()=>{
+  dividendMode = 'withdraw';
+  document.getElementById('modeWithdraw').classList.add('active');
+  document.getElementById('modeReinvest').classList.remove('active');
+  recalc();
 });
 
 recalc();
