@@ -273,21 +273,12 @@
         </div>
 
         <div class="field">
-          <label for="years">累積投資年數</label>
+          <label for="monthlyInvest">一個月定期定額多少錢</label>
           <div class="input-line">
-            <input type="number" id="years" value="15" min="1" max="40">
-            <span class="unit">年</span>
+            <span class="unit">$</span>
+            <input type="number" id="monthlyInvest" value="15000" step="500" min="500">
           </div>
-          <input type="range" id="yearsRange" min="1" max="40" step="1" value="15">
-        </div>
-
-        <div class="field">
-          <label for="retireYield">退休後股息殖利率</label>
-          <div class="input-line">
-            <input type="number" id="retireYield" value="5" min="1" max="15" step="0.1">
-            <span class="unit">%</span>
-          </div>
-          <input type="range" id="retireYieldRange" min="1" max="15" step="0.1" value="5">
+          <input type="range" id="monthlyInvestRange" min="1000" max="60000" step="500" value="15000">
         </div>
 
         <div class="field">
@@ -296,7 +287,15 @@
             <span class="unit">$</span>
             <span class="subval" id="targetPrincipal" style="font-family:'Roboto Mono',monospace;font-size:20px;font-weight:700;color:var(--forest);">-</span>
           </div>
-          <div class="subval">= 年領金額 ÷ 殖利率</div>
+          <div class="subval">= 年領金額 ÷ 5%（假設退休後殖利率）</div>
+        </div>
+
+        <div class="field">
+          <label>累積投資年數（自動計算）</label>
+          <div class="input-line">
+            <span class="subval" id="yearsNeeded" style="font-family:'Roboto Mono',monospace;font-size:20px;font-weight:700;color:var(--forest);">-</span>
+          </div>
+          <div class="subval">依年化7%情境反推所需年數</div>
         </div>
       </div>
     </div>
@@ -315,7 +314,7 @@
         <thead>
           <tr>
             <th>累積期年化報酬率</th>
-            <th style="text-align:right;">每月定期定額</th>
+            <th style="text-align:right;">所需年數</th>
             <th style="text-align:right;">月投本金累計</th>
             <th style="text-align:right;">複利增值</th>
           </tr>
@@ -324,7 +323,7 @@
       </table>
 
       <div class="principal-note">
-        計算採「本金保留、退休後靠殖利率永續提領」模式：先用目標月領金額 ÷ 退休後殖利率 反推所需本金，再用 PMT 年金公式反推每月定期定額投入金額。「月投本金累計」= 每月定期定額 × 投入月數，是自己實際掏出來的錢；「複利增值」= 目標本金 − 月投本金累計，是靠市場報酬額外賺到的部分。實際報酬率、殖利率會隨市場波動，本表僅為估算工具。
+        計算採「本金保留、退休後靠殖利率永續提領」模式：先用目標月領金額 ÷ 5%（假設殖利率）反推所需本金，再用你輸入的「每月定期定額」反推需要投入幾年才能滾到目標本金。「月投本金累計」= 每月定期定額 × 所需月數，是自己實際掏出來的錢；「複利增值」= 目標本金 − 月投本金累計，是靠市場報酬額外賺到的部分。實際報酬率、殖利率會隨市場波動，本表僅為估算工具。
       </div>
     </div>
 
@@ -339,7 +338,7 @@
       </div>
       <table class="ledger">
         <thead>
-          <tr><th>月領金額</th><th style="text-align:right;">年領金額</th><th style="text-align:right;">所需本金（目前殖利率）</th></tr>
+          <tr><th>月領金額</th><th style="text-align:right;">年領金額</th><th style="text-align:right;">所需本金（殖利率5%）</th></tr>
         </thead>
         <tbody id="principalTableBody"></tbody>
       </table>
@@ -399,7 +398,7 @@
     <div class="section">
       <div class="label-row">
         <div>
-          <div class="kicker">Allocation · 依年化7%情境</div>
+          <div class="kicker">Allocation · 依你的月定期定額</div>
           <h2>月投本金分配建議</h2>
         </div>
         <div class="no-tag">NO. 005</div>
@@ -418,7 +417,7 @@
       </table>
 
       <div class="principal-note">
-        以上金額 = 「不同累積期報酬率試算」中年化7%情境的每月定期定額 × 各標的配置比例，會隨上方輸入的目標月領金額、年數、殖利率自動更新。0050/006208 內扣費用低、長期含息總報酬歷史上多優於高股息型，配置較高比重拉高整體成長；0056、00878、00919 分屬不同高股息選股邏輯與投信，同時持有可分散單一標的、單一投信的風險。比例為參考邏輯，非精算最佳解，可依個人風險承受度調整。
+        以上金額 = 你輸入的「每月定期定額」× 各標的配置比例，會隨上方輸入自動更新。0050/006208 內扣費用低、長期含息總報酬歷史上多優於高股息型，配置較高比重拉高整體成長；0056、00878、00919 分屬不同高股息選股邏輯與投信，同時持有可分散單一標的、單一投信的風險。比例為參考邏輯，非精算最佳解，可依個人風險承受度調整。
       </div>
     </div>
 
@@ -440,43 +439,59 @@ function pmtMonthly(annualRate, years, fv){
   return fv * i / (Math.pow(1+i, n) - 1);
 }
 
+// 已知每月投入金額(pmt)、目標本金(fv)、年利率(annualRate)，反推所需月數
+function monthsNeeded(annualRate, pmt, fv){
+  const i = annualRate / 12;
+  if (i === 0) return fv / pmt;
+  const ratio = 1 + (fv * i) / pmt;
+  if (ratio <= 1) return 0;
+  return Math.log(ratio) / Math.log(1 + i);
+}
+
 function fmt(n){
   return Math.round(n).toLocaleString('en-US');
 }
 
+function fmtYearsMonths(totalMonths){
+  const m = Math.max(0, Math.ceil(totalMonths));
+  const y = Math.floor(m / 12);
+  const rem = m % 12;
+  return rem === 0 ? `${y} 年` : `${y} 年 ${rem} 月`;
+}
+
+const RETIRE_YIELD = 0.05; // 假設退休後殖利率，固定5%
+
 function recalc(){
   const target = parseFloat(document.getElementById('targetIncome').value) || 0;
-  const years = parseFloat(document.getElementById('years').value) || 1;
-  const yieldPct = parseFloat(document.getElementById('retireYield').value) || 1;
-  const yieldRate = yieldPct / 100;
+  const monthlyInvest = parseFloat(document.getElementById('monthlyInvest').value) || 1;
 
   document.getElementById('targetIncomeRange').value = target;
-  document.getElementById('yearsRange').value = years;
-  document.getElementById('retireYieldRange').value = yieldPct;
+  document.getElementById('monthlyInvestRange').value = monthlyInvest;
 
-  const principal = (target * 12) / yieldRate;
+  const principal = (target * 12) / RETIRE_YIELD;
   document.getElementById('targetPrincipal').textContent = fmt(principal);
+
+  const headlineMonths = monthsNeeded(0.07, monthlyInvest, principal);
+  document.getElementById('yearsNeeded').textContent = fmtYearsMonths(headlineMonths);
 
   const rates = [0.05, 0.06, 0.07, 0.08];
   const tbody = document.getElementById('ledgerBody');
   tbody.innerHTML = '';
   rates.forEach(r => {
-    const monthly = pmtMonthly(r, years, principal);
-    const months = years * 12;
-    const contributed = monthly * months;
+    const months = monthsNeeded(r, monthlyInvest, principal);
+    const contributed = monthlyInvest * months;
     const growth = principal - contributed;
     const tr = document.createElement('tr');
     if (r === 0.07) tr.className = 'hi';
     tr.innerHTML = `
       <td>${r===0.07 ? '<span class="stamp-mark">推</span>' : ''}年化 ${(r*100).toFixed(0)}%</td>
-      <td class="num">$${fmt(monthly)}</td>
+      <td class="num">${fmtYearsMonths(months)}</td>
       <td class="num">$${fmt(contributed)}</td>
       <td class="num">$${fmt(growth)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  const monthlyAt7 = pmtMonthly(0.07, years, principal);
   const allocations = [
     { code: '0050 / 006208', role: '成長核心', weight: 0.40 },
     { code: '0056',          role: '老牌高股息',   weight: 0.20 },
@@ -486,7 +501,7 @@ function recalc(){
   const abody = document.getElementById('allocationBody');
   abody.innerHTML = '';
   allocations.forEach(a => {
-    const amt = monthlyAt7 * a.weight;
+    const amt = monthlyInvest * a.weight;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${a.code}</td>
@@ -500,9 +515,9 @@ function recalc(){
   totalTr.className = 'hi';
   totalTr.innerHTML = `
     <td><span class="stamp-mark">計</span>合計</td>
-    <td>年化7%情境</td>
+    <td>每月定期定額</td>
     <td class="num">100%</td>
-    <td class="num">$${fmt(monthlyAt7)}</td>
+    <td class="num">$${fmt(monthlyInvest)}</td>
   `;
   abody.appendChild(totalTr);
 
@@ -512,7 +527,7 @@ function recalc(){
   pbody.innerHTML = '';
   uniqueTargets.forEach(t => {
     const yearly = t * 12;
-    const p = yearly / yieldRate;
+    const p = yearly / RETIRE_YIELD;
     const tr = document.createElement('tr');
     if (t === target) tr.className = 'hi';
     tr.innerHTML = `
@@ -524,10 +539,10 @@ function recalc(){
   });
 }
 
-['targetIncome','years','retireYield'].forEach(id=>{
+['targetIncome','monthlyInvest'].forEach(id=>{
   document.getElementById(id).addEventListener('input', recalc);
 });
-['targetIncomeRange','yearsRange','retireYieldRange'].forEach(id=>{
+['targetIncomeRange','monthlyInvestRange'].forEach(id=>{
   document.getElementById(id).addEventListener('input', (e)=>{
     const baseId = id.replace('Range','');
     document.getElementById(baseId).value = e.target.value;
