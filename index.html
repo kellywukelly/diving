@@ -297,6 +297,15 @@
           </div>
           <div class="subval">依年化7%情境反推所需年數</div>
         </div>
+
+        <div class="field">
+          <label>累積投資成本（自動計算）</label>
+          <div class="input-line">
+            <span class="unit">$</span>
+            <span class="subval" id="totalCost" style="font-family:'Roboto Mono',monospace;font-size:20px;font-weight:700;color:var(--forest);">-</span>
+          </div>
+          <div class="subval">= 每月定期定額 × 所需月數（實際掏的錢）</div>
+        </div>
       </div>
     </div>
 
@@ -473,6 +482,7 @@ function recalc(){
 
   const headlineMonths = monthsNeeded(0.07, monthlyInvest, principal);
   document.getElementById('yearsNeeded').textContent = fmtYearsMonths(headlineMonths);
+  document.getElementById('totalCost').textContent = fmt(monthlyInvest * headlineMonths);
 
   const rates = [0.05, 0.06, 0.07, 0.08];
   const tbody = document.getElementById('ledgerBody');
